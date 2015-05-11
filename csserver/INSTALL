@@ -1,0 +1,113 @@
+=========================
+Installation instructions
+=========================
+
+1) System Requirements
+----------------------
+
+Operating system: Ubuntu 14.04 Server
+
+Local development/test server:
+ - Intended cluster size: 25 clients
+ - Hardware
+  - 2GB of memory
+  - 20GB of disk space
+  - 2 CPU cores
+
+Live server:
+- Intended cluster size: 500 clients
+- Hardware
+  - 16GB of memory
+  - 100GB of disk space
+  - 4 CPU cores
+
+
+
+2) Setup base OS
+----------------
+
+Install required software packages.
+
+$ sudo apt-get install build-essential libpq-dev nginx openssh-server
+postgresql postgresql-contrib python3-dev python3-pip python3-psycopg2 -y
+
+$ sudo pip3 install django uwsgi
+
+
+
+3) Install CrashStash
+---------------------
+
+$ sudo mkdir /var/django_root
+$ sudo chown <user>:<user> /var/django_root
+$ cd /var/django_root
+$ django-admin.py startproject mysite
+$ cd mysite
+$ mkdir media
+$ mkdir static
+
+Finally copy the CrashStash server project, mysite_nginx.conf and uwsgi_params
+to /var/django_root/mysite from source control repository.
+
+
+
+4) Configure web server and database
+------------------------------------
+
+$ sudo ln -s /var/django_root/mysite/mysite_nginx.conf /etc/nginx/sites-enabled/
+$ sudo rm /etc/nginx/sites-enabled/default
+$ sed -i '$ a\STATIC_ROOT = os.path.join(BASE_DIR, "static/")' mysite/settings.py
+$ python3 manage.py collectstatic
+$ openssl ecparam -name secp384r1 -genkey -out private-key.pem
+$ openssl req -new -x509 -key private-key.pem -out server.pem -days 365
+$ cat private-key.pem server.pem > server-private.pem
+$ sudo /etc/init.d/nginx restart
+$ mkdir /var/django_root/mysite/client_version
+$ mkdir /var/django_root/mysite/plugins
+$ mkdir /var/django_root/mysite/results
+$ mkdir /var/django_root/mysite/test_cases
+$ sudo -u postgres createuser django_user
+$ sudo -u postgres psql
+> CREATE DATABASE django_db;
+> ALTER USER django_user WITH PASSWORD ‘<db_password>’;
+> GRANT ALL PRIVILEGES ON DATABASE django_db TO django_user;
+> \q
+
+Add ‘url(r'^csserver/', include('csserver.urls', namespace="csserver")),’ 
+to urlpatterns in <mysite>/urls.py
+
+Add “csserver” to INSTALLED_APPS in mysite/settings.py 
+
+Replace DATABASES in <mysite>/settings.py with:
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'django_db',
+        'USER': 'django_user',
+        'PASSWORD': '<db_password>',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+    }
+}
+
+$ python3 manage.py makemigrations csserver
+$ python3 manage.py sqlmigrate csserver 0001
+$ python3 manage.py migrate
+$ python3 manage.py createsuperuser
+$ uwsgi --ini mysite_uwsgi.ini # test running
+
+Open https://<server_ip>/admin in a web browser to configure.
+
+TODO: auto run uwsgi --ini mysite_uwsgi.ini?
+
+
+
+4) References
+-------------
+
+Nginx & uWSGI
+http://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
+
+PostgreSQL
+http://eureka.ykyuen.info/2014/08/29/install-and-setup-postgresql-for-django/
