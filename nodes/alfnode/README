@@ -1,0 +1,18 @@
+AlfCSNode
+=========
+
+This is the code used to run an Alf CrashStash node. It uses the CrashStash
+client module to handle communication with the CrashStash server and runs Alf
+plugins using Alf.
+
+
+Dependencies
+------------
+Alf
+CrashStash
+
+
+Install
+-------
+
+Unpack to the root of the directory containing Alf and CrashStash.
