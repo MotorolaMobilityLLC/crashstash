@@ -103,9 +103,7 @@ the collection of results will need to be performed.
 This is where the Result objects will be created and populated with the results
 that are found by the plugin/fuzzer.
 
-For a simple example see [CrashStashDemoNode.py](csclient/CrashStashDemoNode.py)
-
-TODO: Add a more complete node example.
+For an examples see the nodes directory.
 
 
 Installation
