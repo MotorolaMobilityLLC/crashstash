@@ -420,7 +420,26 @@ class Client(object):
             with open(self._plugin_update, 'rb') as tfp:
                 with tarfile.open(fileobj=tfp, mode='r:gz') as tar:
                     # TODO: look for abs paths and '..'
-                    tar.extractall(path=dest_path)
+                    def is_within_directory(directory, target):
+                        
+                        abs_directory = os.path.abspath(directory)
+                        abs_target = os.path.abspath(target)
+                    
+                        prefix = os.path.commonprefix([abs_directory, abs_target])
+                        
+                        return prefix == abs_directory
+                    
+                    def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                    
+                        for member in tar.getmembers():
+                            member_path = os.path.join(path, member.name)
+                            if not is_within_directory(path, member_path):
+                                raise Exception("Attempted Path Traversal in Tar File")
+                    
+                        tar.extractall(path, members, numeric_owner=numeric_owner) 
+                        
+                    
+                    safe_extract(tar, path=dest_path)
             pl_name, pl_version = self._versions['plugin_pending_update']
             self._versions['plugin_pending_update'] = None
             self._versions['plugin_versions'][pl_name] = pl_version
